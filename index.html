@@ -1,0 +1,1118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PMO Dashboard — Bomb Party</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root {
+  --blue:      #ABC8E7;
+  --deep-blue: #5A97D4;
+  --citron:    #EAE753;
+  --navy:      #0F3053;
+  --navy-2:    #173E69;
+  --green:     #3DB88B;
+  --amber:     #F0B63C;
+  --red:       #E15D5D;
+  --charcoal:  #2C2C2C;
+  --ice:       #EEF8FF;
+  --soft:      #F7F9FC;
+  --line:      rgba(15,48,83,0.10);
+  --line2:     rgba(15,48,83,0.06);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;color:var(--charcoal);background:var(--soft);-webkit-font-smoothing:antialiased;line-height:1.55;font-size:14px}
+
+/* NAV */
+.nav{position:sticky;top:0;z-index:100;background:rgba(247,249,252,0.97);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--line);padding:.85rem 2rem;display:flex;align-items:center;justify-content:space-between;gap:1rem}
+.nav-left{display:flex;align-items:center;gap:.85rem}
+.nav-logo{font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--navy);background:rgba(234,231,83,0.40);border:1px solid rgba(234,231,83,0.6);padding:4px 10px;border-radius:100px}
+.nav-title{font-size:.78rem;font-weight:500;color:var(--navy);opacity:.6}
+.nav-right{display:flex;align-items:center;gap:.75rem}
+.nav-pill{display:flex;align-items:center;gap:5px;font-size:.55rem;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--navy);opacity:.5;background:white;border:1px solid var(--line);padding:4px 10px;border-radius:100px}
+.nav-pill .dot{width:5px;height:5px;border-radius:50%;background:var(--green);flex-shrink:0}
+.nav-date{font-size:.58rem;color:var(--navy);opacity:.35;letter-spacing:.04em;text-transform:uppercase}
+.sync-status{display:flex;align-items:center;gap:5px;font-size:.55rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:4px 10px;border-radius:100px;border:1px solid var(--line);background:white;transition:all .3s;cursor:default}
+.sync-status .sdot{width:6px;height:6px;border-radius:50%;flex-shrink:0;transition:background .3s}
+.sync-status.idle .sdot{background:#9CA3AF}
+.sync-status.loading .sdot{background:var(--amber);animation:pulse .8s infinite}
+.sync-status.ok .sdot{background:var(--green)}
+.sync-status.err .sdot{background:var(--red)}
+
+/* TABS */
+.tabs{position:sticky;top:49px;z-index:90;background:var(--soft);border-bottom:1px solid var(--line);padding:0 2rem;display:flex;gap:0;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab-btn{background:none;border:none;border-bottom:2px solid transparent;padding:.9rem 1.1rem;font-family:'Inter',sans-serif;font-size:.6rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--navy);opacity:.38;cursor:pointer;white-space:nowrap;transition:opacity .15s,border-color .15s}
+.tab-btn:hover{opacity:.65}
+.tab-btn.active{opacity:1;border-bottom-color:var(--navy)}
+.tab-num{opacity:.5;margin-right:4px}
+
+/* LAYOUT */
+.main{max-width:1100px;margin:0 auto;padding:2.5rem 2rem 4rem}
+.pane{display:none}
+.pane.active{display:block}
+
+/* PAGE HEADER */
+.page-header{margin-bottom:2rem}
+.page-header h2{font-size:1.45rem;font-weight:700;color:var(--navy);letter-spacing:-.02em;margin-bottom:.4rem}
+.page-header p{font-size:.8rem;color:var(--navy);opacity:.5;line-height:1.6}
+
+/* SECTION BLOCK */
+.section-block{background:white;border:1px solid var(--line);border-radius:14px;margin-bottom:1.25rem;overflow:hidden}
+.section-head{display:flex;align-items:flex-start;gap:1rem;padding:1.4rem 1.6rem 1.2rem;border-bottom:1px solid var(--line2)}
+.section-icon{width:44px;height:44px;flex-shrink:0;background:var(--ice);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px}
+.section-head-text h3{font-size:.85rem;font-weight:600;color:var(--navy);margin-bottom:.2rem}
+.section-head-text span{font-size:.73rem;color:var(--navy);opacity:.45}
+.section-body{padding:1.4rem 1.6rem}
+.section-body.np{padding:0}
+
+/* GRIDS */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:.85rem}
+.g5{display:grid;grid-template-columns:repeat(5,1fr);gap:.85rem}
+.g6{display:grid;grid-template-columns:repeat(6,1fr);gap:.85rem}
+
+/* KPI */
+.kpi{background:white;border:1px solid var(--line);border-radius:12px;padding:1.25rem 1.4rem}
+.kpi-label{font-size:.58rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--navy);opacity:.4;margin-bottom:.5rem}
+.kpi-value{font-size:2rem;font-weight:700;color:var(--navy);line-height:1}
+.kpi-sub{font-size:.65rem;color:var(--navy);opacity:.35;margin-top:.4rem}
+.kpi-accent{color:var(--deep-blue)}
+.kpi-green{color:var(--green)}
+.kpi-red{color:var(--red)}
+.kpi-amber{color:var(--amber)}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:100px;font-size:.62rem;font-weight:600;letter-spacing:.03em;white-space:nowrap}
+.b-todo   {background:rgba(15,48,83,0.07);  color:var(--navy); border:1px solid var(--line)}
+.b-inprog {background:rgba(90,151,212,0.12);color:#1E40AF;     border:1px solid rgba(90,151,212,0.25)}
+.b-review {background:rgba(120,70,200,0.10);color:#5B21B6;     border:1px solid rgba(120,70,200,0.2)}
+.b-done   {background:rgba(61,184,139,0.12);color:#065F46;     border:1px solid rgba(61,184,139,0.25)}
+.b-block  {background:rgba(225,93,93,0.12); color:#B91C1C;     border:1px solid rgba(225,93,93,0.25)}
+.b-p-high {background:rgba(225,93,93,0.12); color:#B91C1C;     border:1px solid rgba(225,93,93,0.25)}
+.b-p-med  {background:rgba(240,182,60,0.15);color:#92400E;     border:1px solid rgba(240,182,60,0.3)}
+.b-p-low  {background:rgba(61,184,139,0.12);color:#065F46;     border:1px solid rgba(61,184,139,0.25)}
+.b-epic   {background:rgba(120,70,200,0.10);color:#5B21B6;     border:1px solid rgba(120,70,200,0.2)}
+.b-story  {background:rgba(61,184,139,0.10);color:#065F46;     border:1px solid rgba(61,184,139,0.2)}
+.b-task   {background:rgba(90,151,212,0.12);color:#1E40AF;     border:1px solid rgba(90,151,212,0.25)}
+.b-sub    {background:rgba(90,151,212,0.07);color:#3B5DA0;     border:1px solid rgba(90,151,212,0.18)}
+.b-bug    {background:rgba(225,93,93,0.12); color:#B91C1C;     border:1px solid rgba(225,93,93,0.25)}
+
+/* TOOLBAR */
+.toolbar{display:flex;gap:.6rem;margin-bottom:1rem;flex-wrap:wrap;align-items:center}
+.toolbar input[type="text"],.toolbar select{border:1.5px solid rgba(15,48,83,0.15);border-radius:8px;padding:.5rem .8rem;font-family:'Inter',sans-serif;font-size:.75rem;color:var(--charcoal);background:white;outline:none;appearance:none;transition:border-color .15s}
+.toolbar input[type="text"]:focus,.toolbar select:focus{border-color:var(--navy)}
+.toolbar select{padding-right:1.8rem;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%230F3053' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right .6rem center}
+.toolbar-search{position:relative;flex:1;min-width:200px}
+.toolbar-search svg{position:absolute;left:.7rem;top:50%;transform:translateY(-50%);opacity:.3;pointer-events:none}
+.toolbar-search input{padding-left:2.1rem !important;width:100%}
+
+/* TABLE */
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:640px}
+thead th{padding:.7rem 1rem;text-align:left;font-size:.58rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--navy);opacity:.45;background:var(--soft);border-bottom:1px solid var(--line)}
+tbody tr{border-bottom:1px solid var(--line2);transition:background .1s}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:rgba(15,48,83,0.02)}
+td{padding:.85rem 1rem;font-size:.8rem;vertical-align:middle}
+.td-key{font-size:.72rem;font-weight:600;color:var(--deep-blue);white-space:nowrap}
+.td-key a{color:var(--deep-blue);text-decoration:none}
+.td-key a:hover{text-decoration:underline}
+.td-title{font-weight:500;color:var(--navy);line-height:1.45}
+.td-muted{color:var(--navy);opacity:.45;font-size:.75rem}
+
+/* PROGRESS */
+.progress-row{margin-bottom:.75rem}
+.progress-row:last-child{margin-bottom:0}
+.progress-meta{display:flex;justify-content:space-between;font-size:.72rem;margin-bottom:.35rem;color:var(--navy)}
+.progress-label{font-weight:600}
+.progress-pct{opacity:.45}
+.progress-track{height:5px;background:rgba(15,48,83,0.07);border-radius:99px}
+.progress-fill{height:100%;border-radius:99px;background:var(--deep-blue);transition:width .5s}
+
+/* CHART */
+.chart-box{position:relative;width:100%}
+
+/* AVATAR */
+.av{width:24px;height:24px;border-radius:50%;background:var(--ice);border:1px solid var(--line);display:inline-flex;align-items:center;justify-content:center;font-size:.6rem;font-weight:700;color:var(--navy);flex-shrink:0;overflow:hidden;vertical-align:middle;margin-right:.5rem}
+.av img{width:100%;height:100%;object-fit:cover}
+
+/* PROJECT CARDS */
+.proj-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.25rem}
+.proj-card{background:white;border:1px solid var(--line);border-radius:12px;padding:1.4rem 1.5rem;cursor:pointer;transition:border-color .15s,box-shadow .15s}
+.proj-card:hover{border-color:rgba(15,48,83,0.2);box-shadow:0 2px 12px rgba(15,48,83,0.06)}
+.proj-key{font-size:.6rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--navy);background:rgba(234,231,83,0.35);border:1px solid rgba(234,231,83,0.5);padding:3px 9px;border-radius:100px;display:inline-flex;margin-bottom:.65rem}
+.proj-name{font-size:.95rem;font-weight:700;color:var(--navy);margin-bottom:.25rem}
+.proj-type{font-size:.72rem;color:var(--navy);opacity:.4;margin-bottom:1rem}
+.proj-stats{display:flex;gap:1.5rem;padding-top:.85rem;border-top:1px solid var(--line2)}
+.ps-val{font-size:1.3rem;font-weight:700;color:var(--navy);line-height:1}
+.ps-lbl{font-size:.55rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--navy);opacity:.35;margin-top:.25rem}
+
+/* BOARD */
+.board-cols{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1rem}
+.board-col{background:white;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.board-col-hdr{padding:.75rem 1rem;background:var(--soft);border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+.board-col-ttl{font-size:.65rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--navy)}
+.board-col-cnt{font-size:.6rem;font-weight:700;color:var(--navy);opacity:.4;background:var(--ice);padding:2px 7px;border-radius:100px}
+.board-item{padding:.75rem 1rem;border-bottom:1px solid var(--line2);transition:background .1s}
+.board-item:last-child{border-bottom:none}
+.board-item:hover{background:rgba(15,48,83,0.02)}
+.board-item-key{font-size:.65rem;font-weight:600;color:var(--deep-blue);margin-bottom:.3rem}
+.board-item-key a{color:var(--deep-blue);text-decoration:none}
+.board-item-key a:hover{text-decoration:underline}
+.board-item-ttl{font-size:.75rem;color:var(--navy);line-height:1.45;margin-bottom:.4rem}
+.board-item-meta{display:flex;gap:.4rem;flex-wrap:wrap}
+
+/* METRIC ROW */
+.metric-row{display:flex;align-items:center;gap:1rem;padding:.85rem 0;border-bottom:1px solid var(--line2)}
+.metric-row:last-child{border-bottom:none}
+.metric-label{font-size:.78rem;font-weight:600;color:var(--navy);flex:1}
+.metric-bar{flex:2;height:7px;background:rgba(15,48,83,0.07);border-radius:99px;overflow:hidden}
+.metric-bar-fill{height:100%;border-radius:99px;transition:width .5s}
+.metric-val{font-size:.8rem;font-weight:700;color:var(--navy);width:2.5rem;text-align:right}
+.metric-pct{font-size:.65rem;color:var(--navy);opacity:.4;width:2.5rem;text-align:right}
+
+/* LEGEND */
+.legend{display:flex;gap:1rem;flex-wrap:wrap;margin-top:.85rem}
+.legend-item{display:flex;align-items:center;gap:5px;font-size:.65rem;color:var(--navy);opacity:.55}
+.legend-dot{width:9px;height:9px;border-radius:3px;flex-shrink:0}
+
+/* MISC */
+.empty-state{padding:2.5rem;text-align:center;font-size:.78rem;color:var(--navy);opacity:.35}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+.spinner{width:14px;height:14px;border:2px solid rgba(15,48,83,0.15);border-top-color:var(--navy);border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-left">
+    <span class="nav-logo">BOMBPARTY</span>
+    <span class="nav-title">PMO Dashboard</span>
+  </div>
+  <div class="nav-right">
+    <div class="sync-status idle" id="sync-status"><span class="sdot"></span><span id="sync-label">Loading…</span></div>
+    <div class="nav-pill"><span class="dot"></span><span id="nav-count">—</span></div>
+    <div class="nav-date" id="nav-date"></div>
+  </div>
+</nav>
+
+<!-- TABS -->
+<div class="tabs">
+  <button class="tab-btn active" data-pane="overview"> <span class="tab-num">01</span>Overview</button>
+  <button class="tab-btn"        data-pane="trends">   <span class="tab-num">02</span>Trends &amp; Metrics</button>
+  <button class="tab-btn"        data-pane="projects"> <span class="tab-num">03</span>Projects</button>
+  <button class="tab-btn"        data-pane="tasks">    <span class="tab-num">04</span>Tasks &amp; Subtasks</button>
+  <button class="tab-btn"        data-pane="board">    <span class="tab-num">05</span>Board View</button>
+  <button class="tab-btn"        data-pane="assignee"> <span class="tab-num">06</span>By Assignee</button>
+  <button class="tab-btn"        data-pane="sprints">  <span class="tab-num">07</span>Sprints</button>
+</div>
+
+<main class="main">
+
+<!-- ═══ 01 OVERVIEW ═══ -->
+<div class="pane active" id="pane-overview">
+  <div class="page-header">
+    <h2>PMO Dashboard</h2>
+    <p>Live view of all projects, tasks, and subtasks across every Jira board in the BombParty workspace.</p>
+  </div>
+
+  <!-- KPI ROW -->
+  <div class="g6" id="kpi-grid" style="margin-bottom:1.25rem"></div>
+
+  <!-- CHARTS ROW 1: Donut + Column Bar -->
+  <div class="g2" style="margin-bottom:1.25rem">
+    <div class="section-block">
+      <div class="section-head">
+        <div class="section-icon">🍕</div>
+        <div class="section-head-text"><h3>Issues by Status</h3><span>Distribution across all statuses</span></div>
+      </div>
+      <div class="section-body">
+        <div class="chart-box" style="height:200px"><canvas id="ch-status" role="img" aria-label="Issues by status"></canvas></div>
+        <div class="legend" id="legend-status"></div>
+      </div>
+    </div>
+    <div class="section-block">
+      <div class="section-head">
+        <div class="section-icon">📊</div>
+        <div class="section-head-text"><h3>Issues by Project</h3><span>Total issues per project</span></div>
+      </div>
+      <div class="section-body">
+        <div class="chart-box" style="height:230px"><canvas id="ch-project" role="img" aria-label="Issues by project"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHARTS ROW 2: Horizontal bars + Recent -->
+  <div class="g2" style="margin-bottom:1.25rem">
+    <div class="section-block">
+      <div class="section-head">
+        <div class="section-icon">📋</div>
+        <div class="section-head-text"><h3>Issues by Type</h3><span>Epics · Stories · Tasks · Bugs · Sub-tasks</span></div>
+      </div>
+      <div class="section-body">
+        <div class="chart-box" style="height:210px"><canvas id="ch-type" role="img" aria-label="Issues by type"></canvas></div>
+      </div>
+    </div>
+    <div class="section-block">
+      <div class="section-head">
+        <div class="section-icon">🔄</div>
+        <div class="section-head-text"><h3>Recently Updated</h3><span>Latest activity across all boards</span></div>
+      </div>
+      <div class="section-body np" id="ov-recent"><div class="empty-state">Loading…</div></div>
+    </div>
+  </div>
+
+  <!-- PROJECT COMPLETION -->
+  <div class="section-block">
+    <div class="section-head">
+      <div class="section-icon">✅</div>
+      <div class="section-head-text"><h3>Project Completion</h3><span>Done vs total issues per project</span></div>
+    </div>
+    <div class="section-body" id="ov-completion"><div class="empty-state">Loading…</div></div>
+  </div>
+</div>
+
+<!-- ═══ 02 TRENDS & METRICS ═══ -->
+<div class="pane" id="pane-trends">
+  <div class="page-header">
+    <h2>Trends &amp; Metrics</h2>
+    <p>Portfolio health indicators across all projects — status breakdown, type distribution, workload, and velocity.</p>
+  </div>
+
+  <!-- FULL METRICS GRID -->
+  <div id="metrics-kpi-grid" style="margin-bottom:1.25rem"></div>
+
+  <!-- STATUS BREAKDOWN + TYPE BREAKDOWN -->
+  <div class="g2" style="margin-bottom:1.25rem">
+    <div class="section-block">
+      <div class="section-head">
+        <div class="section-icon">📋</div>
+        <div class="section-head-text"><h3>Status Breakdown</h3><span>All statuses across every project</span></div>
+      </div>
+      <div class="section-body" id="tr-status-bars"><div class="empty-state">Loading…</div></div>
+    </div>
+    <div class="section-block">
+      <div class="section-head">
+        <div class="section-icon">🗂️</div>
+        <div class="section-head-text"><h3>Issue Type Breakdown</h3><span>Epics, Stories, Tasks, Bugs, Sub-tasks</span></div>
+      </div>
+      <div class="section-body" id="tr-type-bars"><div class="empty-state">Loading…</div></div>
+    </div>
+  </div>
+
+  <!-- STACKED BAR: STATUS PER PROJECT -->
+  <div class="section-block" style="margin-bottom:1.25rem">
+    <div class="section-head">
+      <div class="section-icon">📈</div>
+      <div class="section-head-text"><h3>Status per Project</h3><span>Stacked bar — To Do · In Progress · In Review · Done · Blocked</span></div>
+    </div>
+    <div class="section-body">
+      <div class="chart-box" style="height:260px"><canvas id="ch-stacked" role="img" aria-label="Status per project"></canvas></div>
+    </div>
+  </div>
+
+  <!-- PRIORITY DIST + ASSIGNEE LOAD -->
+  <div class="g2" style="margin-bottom:1.25rem">
+    <div class="section-block">
+      <div class="section-head">
+        <div class="section-icon">⚡</div>
+        <div class="section-head-text"><h3>Priority Distribution</h3><span>Highest · High · Medium · Low · Lowest</span></div>
+      </div>
+      <div class="section-body">
+        <div class="chart-box" style="height:200px"><canvas id="ch-priority" role="img" aria-label="Priority distribution"></canvas></div>
+        <div class="legend" id="legend-priority"></div>
+      </div>
+    </div>
+    <div class="section-block">
+      <div class="section-head">
+        <div class="section-icon">👤</div>
+        <div class="section-head-text"><h3>Workload by Assignee</h3><span>Open issues per team member</span></div>
+      </div>
+      <div class="section-body">
+        <div class="chart-box" style="height:230px"><canvas id="ch-assignee" role="img" aria-label="Workload by assignee"></canvas></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 03 PROJECTS ═══ -->
+<div class="pane" id="pane-projects">
+  <div class="page-header">
+    <h2>Projects</h2>
+    <p>All active Jira projects in the BombParty workspace. Click a card to view its tasks.</p>
+  </div>
+  <div class="proj-grid" id="proj-grid"><div class="empty-state">Loading…</div></div>
+</div>
+
+<!-- ═══ 04 TASKS & SUBTASKS ═══ -->
+<div class="pane" id="pane-tasks">
+  <div class="page-header">
+    <h2>Tasks &amp; Subtasks</h2>
+    <p>Full issue list across all projects. Click the arrow on any row to expand subtasks.</p>
+  </div>
+  <div class="toolbar">
+    <select id="f-project" onchange="renderTasks()"><option value="">All Projects</option></select>
+    <select id="f-status"  onchange="renderTasks()">
+      <option value="">All Statuses</option>
+      <option value="todo">To Do</option>
+      <option value="inprogress">In Progress</option>
+      <option value="review">In Review</option>
+      <option value="done">Done</option>
+      <option value="blocked">Blocked</option>
+    </select>
+    <select id="f-type" onchange="renderTasks()">
+      <option value="">All Types</option>
+      <option value="Epic">Epic</option>
+      <option value="Story">Story</option>
+      <option value="Task">Task</option>
+      <option value="Bug">Bug</option>
+      <option value="Sub-task">Sub-task</option>
+    </select>
+    <select id="f-priority" onchange="renderTasks()">
+      <option value="">All Priorities</option>
+      <option value="Highest">Highest</option>
+      <option value="High">High</option>
+      <option value="Medium">Medium</option>
+      <option value="Low">Low</option>
+    </select>
+    <div class="toolbar-search">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="f-search" placeholder="Search issues…" oninput="renderTasks()">
+    </div>
+  </div>
+  <div class="section-block">
+    <div class="section-body np">
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Key</th><th>Summary</th><th>Type</th><th>Status</th><th>Priority</th><th>Assignee</th><th>Project</th><th>Updated</th></tr></thead>
+          <tbody id="tasks-tbody"><tr><td colspan="8" class="empty-state">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 05 BOARD VIEW ═══ -->
+<div class="pane" id="pane-board">
+  <div class="page-header">
+    <h2>Board View</h2>
+    <p>Issues grouped by status. Filter by project to focus on a single board.</p>
+  </div>
+  <div class="toolbar">
+    <select id="f-board-proj" onchange="renderBoard()"><option value="">All Projects</option></select>
+  </div>
+  <div class="board-cols" id="board-cols"><div class="empty-state">Loading…</div></div>
+</div>
+
+<!-- ═══ 06 BY ASSIGNEE ═══ -->
+<div class="pane" id="pane-assignee">
+  <div class="page-header">
+    <h2>By Assignee</h2>
+    <p>Issue load and status breakdown per team member.</p>
+  </div>
+  <div id="assignee-view"><div class="empty-state">Loading…</div></div>
+</div>
+
+<!-- ═══ 07 SPRINTS ═══ -->
+<div class="pane" id="pane-sprints">
+  <div class="page-header">
+    <h2>Sprints</h2>
+    <p>Active sprint progress across all Jira boards.</p>
+  </div>
+  <div id="sprints-view"><div class="empty-state">Loading…</div></div>
+</div>
+
+</main>
+
+<script>
+const WORKER   = 'https://pmo-dashboard.douglasf.workers.dev';
+const JIRA_URL = 'https://bombparty.atlassian.net';
+
+let allProjects = [], allIssues = [], sprintData = [], expanded = new Set();
+let charts = {};
+
+/* ── CHART COLORS ── */
+const C = {
+  todo:    { bg:'rgba(15,48,83,0.35)',    border:'rgba(15,48,83,0.5)' },
+  inprog:  { bg:'rgba(90,151,212,0.65)',  border:'rgba(90,151,212,0.9)' },
+  review:  { bg:'rgba(120,70,200,0.55)',  border:'rgba(120,70,200,0.8)' },
+  done:    { bg:'rgba(61,184,139,0.65)',  border:'rgba(61,184,139,0.9)' },
+  blocked: { bg:'rgba(225,93,93,0.65)',   border:'rgba(225,93,93,0.9)' },
+  highest: { bg:'rgba(225,93,93,0.7)',    border:'rgba(225,93,93,0.9)' },
+  high:    { bg:'rgba(240,120,60,0.65)',  border:'rgba(240,120,60,0.85)' },
+  medium:  { bg:'rgba(240,182,60,0.65)',  border:'rgba(240,182,60,0.85)' },
+  low:     { bg:'rgba(61,184,139,0.55)',  border:'rgba(61,184,139,0.8)' },
+  lowest:  { bg:'rgba(15,48,83,0.2)',     border:'rgba(15,48,83,0.35)' },
+  proj:    ['rgba(15,48,83,0.65)','rgba(90,151,212,0.65)','rgba(61,184,139,0.65)','rgba(240,182,60,0.65)','rgba(225,93,93,0.65)','rgba(120,70,200,0.55)','rgba(171,200,231,0.8)','rgba(240,120,60,0.65)'],
+};
+
+const CHART_DEFAULTS = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: { legend: { display: false }, tooltip: {
+    backgroundColor: '#0F3053', titleFont: { family:'Inter', size:11 },
+    bodyFont: { family:'Inter', size:11 }, padding: 10, cornerRadius: 8,
+  }},
+};
+
+/* ── TABS ── */
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.pane').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('pane-' + btn.dataset.pane).classList.add('active');
+  });
+});
+
+/* ── SYNC ── */
+function setSS(state, label) {
+  document.getElementById('sync-status').className = 'sync-status ' + state;
+  document.getElementById('sync-label').textContent = label;
+}
+
+/* ── FETCH ── */
+async function jFetch(path) {
+  const r = await fetch(WORKER + path);
+  if (!r.ok) throw new Error(r.status + ' ' + path);
+  return r.json();
+}
+
+/* ── LOAD ── */
+async function loadAll() {
+  setSS('loading','Syncing…');
+  try {
+    const pd = await jFetch('/rest/api/3/project/search?maxResults=50&orderBy=name');
+    allProjects = pd.values || [];
+
+    if (allProjects.length) {
+      const keys = allProjects.map(p => p.key).join(',');
+      const jql  = encodeURIComponent(`project IN (${keys}) ORDER BY updated DESC`);
+      allIssues  = [];
+      let start  = 0;
+      while (true) {
+        const d = await jFetch(
+          `/rest/api/3/search?jql=${jql}&maxResults=100&startAt=${start}` +
+          `&fields=summary,status,assignee,priority,issuetype,subtasks,parent,updated,project`
+        );
+        allIssues = allIssues.concat(d.issues || []);
+        if (allIssues.length >= d.total || !(d.issues||[]).length) break;
+        start += 100;
+        if (start > 800) break;
+      }
+    }
+
+    sprintData = [];
+    try {
+      const bd = await jFetch('/rest/agile/1.0/board?maxResults=50');
+      for (const board of (bd.values||[])) {
+        try {
+          const sd = await jFetch(`/rest/agile/1.0/board/${board.id}/sprint?state=active`);
+          for (const sprint of (sd.values||[])) {
+            try {
+              const si = await jFetch(`/rest/agile/1.0/board/${board.id}/sprint/${sprint.id}/issue?maxResults=100&fields=summary,status,assignee,priority,issuetype`);
+              sprintData.push({ board, sprint, issues: si.issues||[] });
+            } catch {}
+          }
+        } catch {}
+      }
+    } catch {}
+
+    renderAll();
+    setSS('ok','Live');
+    document.getElementById('nav-count').textContent = allIssues.length + ' issues tracked';
+  } catch(e) {
+    setSS('err','Error');
+    console.error(e);
+  }
+}
+
+/* ── RENDER ALL ── */
+function renderAll() {
+  document.getElementById('nav-date').textContent =
+    new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  renderKPIs();
+  setTimeout(() => {
+    renderChartStatus();
+    renderChartProject();
+    renderChartType();
+    renderChartStacked();
+    renderChartPriority();
+    renderChartAssignee();
+  }, 100);
+  renderOvRecent();
+  renderOvCompletion();
+  renderMetricsKPIs();
+  renderTrStatusBars();
+  renderTrTypeBars();
+  renderProjects();
+  populateFilters();
+  renderTasks();
+  renderBoard();
+  renderAssignee();
+  renderSprints();
+}
+
+/* ── KPIs ── */
+function renderKPIs() {
+  const total   = allIssues.length;
+  const tasks   = allIssues.filter(i => i.fields.issuetype?.name === 'Task').length;
+  const subs    = allIssues.filter(i => i.fields.issuetype?.name === 'Sub-task').length;
+  const inprog  = allIssues.filter(i => cat(i) === 'inprogress').length;
+  const done    = allIssues.filter(i => cat(i) === 'done').length;
+  const blocked = allIssues.filter(i => cat(i) === 'blocked').length;
+
+  document.getElementById('kpi-grid').innerHTML = [
+    { label:'Projects',    value:allProjects.length, sub:'Active boards',       cls:'' },
+    { label:'Total Issues',value:total,              sub:'Across all projects', cls:'' },
+    { label:'Tasks',       value:tasks,              sub:'Task type only',      cls:'' },
+    { label:'Subtasks',    value:subs,               sub:'Sub-task type only',  cls:'' },
+    { label:'In Progress', value:inprog,             sub:'Active work',         cls:'kpi-accent' },
+    { label:'Done',        value:done,               sub:'Completed',           cls:'kpi-green' },
+  ].map(k => `
+    <div class="kpi">
+      <div class="kpi-label">${k.label}</div>
+      <div class="kpi-value ${k.cls}">${k.value}</div>
+      <div class="kpi-sub">${k.sub}</div>
+    </div>`).join('');
+}
+
+/* ── CHART: STATUS DONUT ── */
+function renderChartStatus() {
+  const counts = {
+    'To Do':       allIssues.filter(i => cat(i) === 'todo').length,
+    'In Progress': allIssues.filter(i => cat(i) === 'inprogress').length,
+    'In Review':   allIssues.filter(i => cat(i) === 'review').length,
+    'Done':        allIssues.filter(i => cat(i) === 'done').length,
+    'Blocked':     allIssues.filter(i => cat(i) === 'blocked').length,
+  };
+  const colors = [C.todo.bg, C.inprog.bg, C.review.bg, C.done.bg, C.blocked.bg];
+  const borders= [C.todo.border, C.inprog.border, C.review.border, C.done.border, C.blocked.border];
+
+  destroyChart('ch-status');
+  charts['ch-status'] = new Chart(document.getElementById('ch-status'), {
+    type: 'doughnut',
+    data: {
+      labels: Object.keys(counts),
+      datasets: [{ data: Object.values(counts), backgroundColor: colors, borderColor: borders, borderWidth: 1.5, hoverOffset: 6 }]
+    },
+    options: { ...CHART_DEFAULTS, cutout: '62%',
+      plugins: { ...CHART_DEFAULTS.plugins, legend: { display: false } }
+    }
+  });
+
+  // Legend
+  document.getElementById('legend-status').innerHTML = Object.entries(counts).map(([k,v],i) =>
+    `<div class="legend-item"><div class="legend-dot" style="background:${colors[i]}"></div>${k} (${v})</div>`
+  ).join('');
+}
+
+/* ── CHART: ISSUES BY PROJECT (column bar) ── */
+function renderChartProject() {
+  const labels = allProjects.map(p => p.key);
+  const data   = allProjects.map(p => allIssues.filter(i => i.fields.project?.key === p.key).length);
+  const colors = labels.map((_,i) => C.proj[i % C.proj.length]);
+
+  destroyChart('ch-project');
+  charts['ch-project'] = new Chart(document.getElementById('ch-project'), {
+    type: 'bar',
+    data: { labels, datasets: [{ data, backgroundColor: colors, borderColor: colors.map(c=>c.replace('0.65','0.9')), borderWidth: 1.5, borderRadius: 6 }] },
+    options: { ...CHART_DEFAULTS,
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { family:'Inter', size:11 }, color:'rgba(15,48,83,0.45)' } },
+        y: { grid: { color:'rgba(15,48,83,0.06)' }, ticks: { font: { family:'Inter', size:11 }, color:'rgba(15,48,83,0.45)' }, beginAtZero:true }
+      }
+    }
+  });
+}
+
+/* ── CHART: ISSUES BY TYPE (horizontal bar) ── */
+function renderChartType() {
+  const types  = ['Epic','Story','Task','Bug','Sub-task'];
+  const counts = types.map(t => allIssues.filter(i => i.fields.issuetype?.name === t).length);
+  const colors = ['rgba(120,70,200,0.55)','rgba(61,184,139,0.60)','rgba(90,151,212,0.65)','rgba(225,93,93,0.65)','rgba(90,151,212,0.35)'];
+
+  destroyChart('ch-type');
+  charts['ch-type'] = new Chart(document.getElementById('ch-type'), {
+    type: 'bar',
+    data: { labels: types, datasets: [{ data: counts, backgroundColor: colors, borderColor: colors.map(c=>c.replace(/[\d.]+\)$/, '0.9)')), borderWidth: 1.5, borderRadius: 6 }] },
+    options: { ...CHART_DEFAULTS, indexAxis: 'y',
+      scales: {
+        x: { grid: { color:'rgba(15,48,83,0.06)' }, ticks: { font: { family:'Inter', size:11 }, color:'rgba(15,48,83,0.45)' }, beginAtZero:true },
+        y: { grid: { display:false }, ticks: { font: { family:'Inter', size:11 }, color:'rgba(15,48,83,0.45)' } }
+      }
+    }
+  });
+}
+
+/* ── CHART: STACKED STATUS PER PROJECT ── */
+function renderChartStacked() {
+  const labels   = allProjects.map(p => p.key);
+  const statuses = ['To Do','In Progress','In Review','Done','Blocked'];
+  const colors   = [C.todo.bg, C.inprog.bg, C.review.bg, C.done.bg, C.blocked.bg];
+
+  const datasets = statuses.map((s, i) => ({
+    label: s,
+    data: allProjects.map(p => {
+      const issues = allIssues.filter(i => i.fields.project?.key === p.key);
+      const n = s.toLowerCase().replace(' ','');
+      return issues.filter(issue => {
+        const c = cat(issue);
+        if (n === 'todo')       return c === 'todo';
+        if (n === 'inprogress') return c === 'inprogress';
+        if (n === 'inreview')   return c === 'review';
+        if (n === 'done')       return c === 'done';
+        if (n === 'blocked')    return c === 'blocked';
+        return false;
+      }).length;
+    }),
+    backgroundColor: colors[i],
+    borderColor:     colors[i].replace(/[\d.]+\)$/, '0.9)'),
+    borderWidth: 1,
+    borderRadius: i === statuses.length - 1 ? { topLeft:4, topRight:4 } : 0,
+  }));
+
+  destroyChart('ch-stacked');
+  charts['ch-stacked'] = new Chart(document.getElementById('ch-stacked'), {
+    type: 'bar',
+    data: { labels, datasets },
+    options: { ...CHART_DEFAULTS,
+      plugins: { ...CHART_DEFAULTS.plugins, legend: {
+        display: true, position: 'bottom',
+        labels: { font: { family:'Inter', size:11 }, color:'rgba(15,48,83,0.6)', boxWidth:10, padding:16 }
+      }},
+      scales: {
+        x: { stacked:true, grid:{ display:false }, ticks:{ font:{family:'Inter',size:11}, color:'rgba(15,48,83,0.45)' } },
+        y: { stacked:true, grid:{ color:'rgba(15,48,83,0.06)' }, ticks:{ font:{family:'Inter',size:11}, color:'rgba(15,48,83,0.45)' }, beginAtZero:true }
+      }
+    }
+  });
+}
+
+/* ── CHART: PRIORITY DONUT ── */
+function renderChartPriority() {
+  const priorities = ['Highest','High','Medium','Low','Lowest'];
+  const counts = priorities.map(p => allIssues.filter(i => i.fields.priority?.name === p).length);
+  const colors = [C.highest.bg, C.high.bg, C.medium.bg, C.low.bg, C.lowest.bg];
+
+  destroyChart('ch-priority');
+  charts['ch-priority'] = new Chart(document.getElementById('ch-priority'), {
+    type: 'doughnut',
+    data: {
+      labels: priorities,
+      datasets: [{ data: counts, backgroundColor: colors, borderColor: colors.map(c=>c.replace(/[\d.]+\)$/, '0.9)')), borderWidth: 1.5, hoverOffset: 6 }]
+    },
+    options: { ...CHART_DEFAULTS, cutout: '62%' }
+  });
+
+  document.getElementById('legend-priority').innerHTML = priorities.map((p,i) =>
+    `<div class="legend-item"><div class="legend-dot" style="background:${colors[i]}"></div>${p} (${counts[i]})</div>`
+  ).join('');
+}
+
+/* ── CHART: ASSIGNEE WORKLOAD (horizontal bar) ── */
+function renderChartAssignee() {
+  const map = {};
+  allIssues.filter(i => cat(i) !== 'done').forEach(i => {
+    const n = i.fields.assignee?.displayName || 'Unassigned';
+    map[n] = (map[n]||0) + 1;
+  });
+  const sorted = Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,10);
+
+  destroyChart('ch-assignee');
+  charts['ch-assignee'] = new Chart(document.getElementById('ch-assignee'), {
+    type: 'bar',
+    data: {
+      labels: sorted.map(e=>e[0]),
+      datasets: [{ data: sorted.map(e=>e[1]), backgroundColor:'rgba(90,151,212,0.60)', borderColor:'rgba(90,151,212,0.9)', borderWidth:1.5, borderRadius:5 }]
+    },
+    options: { ...CHART_DEFAULTS, indexAxis: 'y',
+      scales: {
+        x: { grid:{color:'rgba(15,48,83,0.06)'}, ticks:{font:{family:'Inter',size:11},color:'rgba(15,48,83,0.45)'}, beginAtZero:true },
+        y: { grid:{display:false}, ticks:{font:{family:'Inter',size:11},color:'rgba(15,48,83,0.45)'} }
+      }
+    }
+  });
+}
+
+function destroyChart(id) {
+  if (charts[id]) { charts[id].destroy(); delete charts[id]; }
+}
+
+/* ── OVERVIEW: Recent ── */
+function renderOvRecent() {
+  const el = document.getElementById('ov-recent');
+  const list = [...allIssues].sort((a,b)=>new Date(b.fields.updated)-new Date(a.fields.updated)).slice(0,10);
+  if (!list.length) { el.innerHTML = emp('No recent issues'); return; }
+  el.innerHTML = list.map(i =>
+    `<div style="padding:.75rem 1.6rem;border-bottom:1px solid var(--line2);display:flex;justify-content:space-between;align-items:center;gap:1rem">
+      <div>
+        <div class="td-key"><a href="${JIRA_URL}/browse/${i.key}" target="_blank">${i.key}</a></div>
+        <div style="font-size:.75rem;color:var(--navy);margin-top:.2rem">${trunc(i.fields.summary,55)}</div>
+      </div>
+      <div style="flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:.3rem">${sb(i)}<span style="font-size:.62rem;color:var(--navy);opacity:.35">${rd(i.fields.updated)}</span></div>
+    </div>`).join('');
+}
+
+/* ── OVERVIEW: Completion ── */
+function renderOvCompletion() {
+  const el = document.getElementById('ov-completion');
+  if (!allProjects.length) { el.innerHTML = emp('No projects'); return; }
+  el.innerHTML = allProjects.map(p => {
+    const issues = allIssues.filter(i => i.fields.project?.key === p.key);
+    const done   = issues.filter(i => cat(i)==='done').length;
+    const inprog = issues.filter(i => cat(i)==='inprogress').length;
+    const pct    = issues.length ? Math.round(done/issues.length*100) : 0;
+    return `<div class="progress-row">
+      <div class="progress-meta">
+        <span class="progress-label">${p.key} — ${p.name}</span>
+        <span class="progress-pct">${done}/${issues.length} done &nbsp;·&nbsp; ${inprog} in progress &nbsp;·&nbsp; ${pct}%</span>
+      </div>
+      <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
+    </div>`;
+  }).join('');
+}
+
+/* ── TRENDS: Metrics KPIs ── */
+function renderMetricsKPIs() {
+  const total    = allIssues.length;
+  const epics    = allIssues.filter(i=>i.fields.issuetype?.name==='Epic').length;
+  const stories  = allIssues.filter(i=>i.fields.issuetype?.name==='Story').length;
+  const tasks    = allIssues.filter(i=>i.fields.issuetype?.name==='Task').length;
+  const bugs     = allIssues.filter(i=>i.fields.issuetype?.name==='Bug').length;
+  const subs     = allIssues.filter(i=>i.fields.issuetype?.name==='Sub-task').length;
+  const todo     = allIssues.filter(i=>cat(i)==='todo').length;
+  const inprog   = allIssues.filter(i=>cat(i)==='inprogress').length;
+  const review   = allIssues.filter(i=>cat(i)==='review').length;
+  const done     = allIssues.filter(i=>cat(i)==='done').length;
+  const blocked  = allIssues.filter(i=>cat(i)==='blocked').length;
+
+  const row1 = [
+    { label:'Total Projects', value:allProjects.length, sub:'Active in workspace',  cls:'' },
+    { label:'Total Issues',   value:total,              sub:'All types combined',   cls:'' },
+    { label:'Epics',          value:epics,              sub:'Epic type',            cls:'' },
+    { label:'Stories',        value:stories,            sub:'Story type',           cls:'kpi-green' },
+    { label:'Tasks',          value:tasks,              sub:'Task type',            cls:'kpi-accent' },
+    { label:'Bugs',           value:bugs,               sub:'Bug type',             cls:'kpi-red' },
+  ];
+  const row2 = [
+    { label:'Subtasks',       value:subs,               sub:'Sub-task type',        cls:'' },
+    { label:'To Do',          value:todo,               sub:'Not started',          cls:'' },
+    { label:'In Progress',    value:inprog,             sub:'Active work',          cls:'kpi-accent' },
+    { label:'In Review',      value:review,             sub:'Awaiting review',      cls:'' },
+    { label:'Done / Closed',  value:done,               sub:'Completed',            cls:'kpi-green' },
+    { label:'Blocked',        value:blocked,            sub:'Needs attention',      cls:'kpi-red' },
+  ];
+
+  document.getElementById('metrics-kpi-grid').innerHTML =
+    `<div class="g6" style="margin-bottom:.85rem">` +
+    row1.map(k=>`<div class="kpi"><div class="kpi-label">${k.label}</div><div class="kpi-value ${k.cls}">${k.value}</div><div class="kpi-sub">${k.sub}</div></div>`).join('') +
+    `</div><div class="g6" style="margin-bottom:1.25rem">` +
+    row2.map(k=>`<div class="kpi"><div class="kpi-label">${k.label}</div><div class="kpi-value ${k.cls}">${k.value}</div><div class="kpi-sub">${k.sub}</div></div>`).join('') +
+    `</div>`;
+}
+
+/* ── TRENDS: Status bars ── */
+function renderTrStatusBars() {
+  const el = document.getElementById('tr-status-bars');
+  const total = allIssues.length || 1;
+  const statuses = [
+    { name:'To Do',       key:'todo',       color:'rgba(15,48,83,0.4)' },
+    { name:'In Progress', key:'inprogress', color:'rgba(90,151,212,0.7)' },
+    { name:'In Review',   key:'review',     color:'rgba(120,70,200,0.6)' },
+    { name:'Done',        key:'done',       color:'rgba(61,184,139,0.7)' },
+    { name:'Blocked',     key:'blocked',    color:'rgba(225,93,93,0.7)' },
+  ];
+  el.innerHTML = statuses.map(s => {
+    const count = allIssues.filter(i=>cat(i)===s.key).length;
+    const pct   = Math.round(count/total*100);
+    return `<div class="metric-row">
+      <div class="metric-label">${s.name}</div>
+      <div class="metric-bar"><div class="metric-bar-fill" style="width:${pct}%;background:${s.color}"></div></div>
+      <div class="metric-val">${count}</div>
+      <div class="metric-pct">${pct}%</div>
+    </div>`;
+  }).join('');
+}
+
+/* ── TRENDS: Type bars ── */
+function renderTrTypeBars() {
+  const el = document.getElementById('tr-type-bars');
+  const total = allIssues.length || 1;
+  const types = [
+    { name:'Epic',     color:'rgba(120,70,200,0.55)' },
+    { name:'Story',    color:'rgba(61,184,139,0.60)' },
+    { name:'Task',     color:'rgba(90,151,212,0.65)' },
+    { name:'Bug',      color:'rgba(225,93,93,0.65)' },
+    { name:'Sub-task', color:'rgba(90,151,212,0.35)' },
+  ];
+  el.innerHTML = types.map(t => {
+    const count = allIssues.filter(i=>i.fields.issuetype?.name===t.name).length;
+    const pct   = Math.round(count/total*100);
+    return `<div class="metric-row">
+      <div class="metric-label">${t.name}</div>
+      <div class="metric-bar"><div class="metric-bar-fill" style="width:${pct}%;background:${t.color}"></div></div>
+      <div class="metric-val">${count}</div>
+      <div class="metric-pct">${pct}%</div>
+    </div>`;
+  }).join('');
+}
+
+/* ── PROJECTS ── */
+function renderProjects() {
+  const el = document.getElementById('proj-grid');
+  if (!allProjects.length) { el.innerHTML = emp('No projects'); return; }
+  el.innerHTML = allProjects.map(p => {
+    const issues = allIssues.filter(i => i.fields.project?.key === p.key);
+    const todo   = issues.filter(i => cat(i)==='todo').length;
+    const inprog = issues.filter(i => cat(i)==='inprogress').length;
+    const done   = issues.filter(i => cat(i)==='done').length;
+    return `<div class="proj-card" onclick="goToProject('${p.key}')">
+      <div class="proj-key">${p.key}</div>
+      <div class="proj-name">${p.name}</div>
+      <div class="proj-type">${cap(p.projectTypeKey||'software')} project · ${issues.length} issues total</div>
+      <div class="proj-stats">
+        <div><div class="ps-val">${todo}</div><div class="ps-lbl">To Do</div></div>
+        <div><div class="ps-val">${inprog}</div><div class="ps-lbl">In Prog</div></div>
+        <div><div class="ps-val">${done}</div><div class="ps-lbl">Done</div></div>
+        <div><div class="ps-val">${issues.filter(i=>cat(i)==='blocked').length}</div><div class="ps-lbl">Blocked</div></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ── FILTERS ── */
+function populateFilters() {
+  ['f-project','f-board-proj'].forEach(id => {
+    const el = document.getElementById(id), v = el.value;
+    el.innerHTML = '<option value="">All Projects</option>' +
+      allProjects.map(p=>`<option value="${p.key}">${p.key} — ${p.name}</option>`).join('');
+    el.value = v;
+  });
+}
+
+/* ── TASKS ── */
+function renderTasks() {
+  const tbody = document.getElementById('tasks-tbody');
+  const proj  = document.getElementById('f-project').value;
+  const stat  = document.getElementById('f-status').value;
+  const type  = document.getElementById('f-type').value;
+  const prio  = document.getElementById('f-priority').value;
+  const srch  = document.getElementById('f-search').value.toLowerCase();
+
+  const list = allIssues.filter(i => {
+    if (proj && i.fields.project?.key !== proj)        return false;
+    if (stat && cat(i) !== stat)                       return false;
+    if (type && i.fields.issuetype?.name !== type)     return false;
+    if (prio && i.fields.priority?.name !== prio)      return false;
+    if (srch && !i.fields.summary.toLowerCase().includes(srch) && !i.key.toLowerCase().includes(srch)) return false;
+    return true;
+  });
+
+  if (!list.length) { tbody.innerHTML=`<tr><td colspan="8" class="empty-state">No issues match these filters.</td></tr>`; return; }
+
+  let html = '';
+  list.forEach(issue => {
+    const subs   = issue.fields.subtasks || [];
+    const isOpen = expanded.has(issue.key);
+    html += `<tr>
+      <td class="td-key"><a href="${JIRA_URL}/browse/${issue.key}" target="_blank">${issue.key}</a></td>
+      <td class="td-title">${trunc(issue.fields.summary,65)}${subs.length?`<button onclick="toggleSub('${issue.key}')" style="background:none;border:none;cursor:pointer;font-size:.65rem;color:var(--deep-blue);margin-left:.5rem;font-family:'Inter',sans-serif;font-weight:600">${isOpen?'▲':'▼'} ${subs.length}</button>`:''}</td>
+      <td>${tb(issue)}</td><td>${sb(issue)}</td><td>${pb(issue)}</td><td>${ac(issue)}</td>
+      <td class="td-muted">${issue.fields.project?.key||'—'}</td>
+      <td class="td-muted">${rd(issue.fields.updated)}</td>
+    </tr>`;
+    if (subs.length && isOpen) {
+      subs.forEach(s => {
+        const full = allIssues.find(i=>i.id===s.id);
+        html += `<tr style="background:rgba(15,48,83,0.012)">
+          <td class="td-key" style="padding-left:2.2rem"><a href="${JIRA_URL}/browse/${s.key}" target="_blank">${s.key}</a></td>
+          <td class="td-title" style="padding-left:2.2rem">↳ ${trunc(full?.fields?.summary||s.fields?.summary||'—',60)}</td>
+          <td>${full?tb(full):'<span class="badge b-sub">Sub-task</span>'}</td>
+          <td>${full?sb(full):sbr(s.fields?.status?.name||'—')}</td>
+          <td>${full?pb(full):'<span class="td-muted">—</span>'}</td>
+          <td>${full?ac(full):'<span class="td-muted">—</span>'}</td>
+          <td class="td-muted">${full?full.fields.project?.key||'—':'—'}</td>
+          <td class="td-muted">${full?rd(full.fields.updated):'—'}</td>
+        </tr>`;
+      });
+    }
+  });
+  tbody.innerHTML = html;
+}
+
+function toggleSub(key) { expanded.has(key)?expanded.delete(key):expanded.add(key); renderTasks(); }
+
+/* ── BOARD ── */
+function renderBoard() {
+  const el   = document.getElementById('board-cols');
+  const proj = document.getElementById('f-board-proj').value;
+  const issues = proj ? allIssues.filter(i=>i.fields.project?.key===proj) : allIssues;
+  const groups = {};
+  issues.forEach(i => {
+    const n = i.fields.status?.name || 'To Do';
+    if (!groups[n]) groups[n]=[];
+    groups[n].push(i);
+  });
+  const keys = Object.keys(groups);
+  if (!keys.length) { el.innerHTML=emp('No issues found'); return; }
+  el.innerHTML = keys.map(status => {
+    const items = groups[status];
+    return `<div class="board-col">
+      <div class="board-col-hdr"><span class="board-col-ttl">${status}</span><span class="board-col-cnt">${items.length}</span></div>
+      ${items.slice(0,30).map(i=>`
+        <div class="board-item">
+          <div class="board-item-key"><a href="${JIRA_URL}/browse/${i.key}" target="_blank">${i.key}</a></div>
+          <div class="board-item-ttl">${trunc(i.fields.summary,55)}</div>
+          <div class="board-item-meta">${tb(i)} ${pb(i)}</div>
+        </div>`).join('')}
+      ${items.length>30?`<div style="padding:.75rem 1rem;font-size:.7rem;color:var(--navy);opacity:.4;text-align:center">+${items.length-30} more</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+/* ── BY ASSIGNEE ── */
+function renderAssignee() {
+  const el = document.getElementById('assignee-view');
+  const map = {};
+  allIssues.forEach(i => {
+    const name   = i.fields.assignee?.displayName || 'Unassigned';
+    const avatar = i.fields.assignee?.avatarUrls?.['24x24'] || null;
+    if (!map[name]) map[name]={avatar,issues:[]};
+    map[name].issues.push(i);
+  });
+  const sorted = Object.entries(map).sort((a,b)=>b[1].issues.length-a[1].issues.length);
+  if (!sorted.length) { el.innerHTML=emp('No data'); return; }
+  el.innerHTML = sorted.map(([name,data]) => {
+    const issues = data.issues;
+    const todo   = issues.filter(i=>cat(i)==='todo').length;
+    const inprog = issues.filter(i=>cat(i)==='inprogress').length;
+    const review = issues.filter(i=>cat(i)==='review').length;
+    const done   = issues.filter(i=>cat(i)==='done').length;
+    const blocked= issues.filter(i=>cat(i)==='blocked').length;
+    return `<div class="section-block">
+      <div class="section-head">
+        <div class="section-icon" style="overflow:hidden;padding:0">
+          ${data.avatar?`<img src="${data.avatar}" style="width:44px;height:44px;object-fit:cover">`:
+          `<span style="font-size:.85rem;font-weight:700;color:var(--navy)">${init(name)}</span>`}
+        </div>
+        <div class="section-head-text">
+          <h3>${name}</h3>
+          <span>${issues.length} issues &nbsp;·&nbsp; ${todo} to do &nbsp;·&nbsp; ${inprog} in progress &nbsp;·&nbsp; ${review} in review &nbsp;·&nbsp; ${done} done &nbsp;·&nbsp; ${blocked} blocked</span>
+        </div>
+      </div>
+      <div class="section-body np"><div class="tbl-wrap"><table>
+        <thead><tr><th>Key</th><th>Summary</th><th>Type</th><th>Status</th><th>Priority</th><th>Project</th></tr></thead>
+        <tbody>
+          ${issues.slice(0,8).map(i=>`<tr>
+            <td class="td-key"><a href="${JIRA_URL}/browse/${i.key}" target="_blank">${i.key}</a></td>
+            <td class="td-title">${trunc(i.fields.summary,60)}</td>
+            <td>${tb(i)}</td><td>${sb(i)}</td><td>${pb(i)}</td>
+            <td class="td-muted">${i.fields.project?.key||'—'}</td>
+          </tr>`).join('')}
+          ${issues.length>8?`<tr><td colspan="6" style="text-align:center;padding:.85rem;font-size:.72rem;color:var(--navy);opacity:.35">+${issues.length-8} more issues</td></tr>`:''}
+        </tbody>
+      </table></div></div>
+    </div>`;
+  }).join('');
+}
+
+/* ── SPRINTS ── */
+function renderSprints() {
+  const el = document.getElementById('sprints-view');
+  if (!sprintData.length) { el.innerHTML=emp('No active sprints found.'); return; }
+  el.innerHTML = sprintData.map(({board,sprint,issues}) => {
+    const done  = issues.filter(i=>cat(i)==='done').length;
+    const total = issues.length;
+    const pct   = total?Math.round(done/total*100):0;
+    const start = sprint.startDate?new Date(sprint.startDate).toLocaleDateString('en-US',{month:'short',day:'numeric'}):'—';
+    const end   = sprint.endDate  ?new Date(sprint.endDate).toLocaleDateString('en-US',{month:'short',day:'numeric'}):'—';
+    return `<div class="section-block">
+      <div class="section-head">
+        <div class="section-icon">🏃</div>
+        <div class="section-head-text">
+          <h3>${sprint.name}</h3>
+          <span>Board: ${board.name} &nbsp;·&nbsp; ${start} → ${end} &nbsp;·&nbsp; ${pct}% complete (${done}/${total})</span>
+        </div>
+      </div>
+      <div class="section-body">
+        <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
+      </div>
+      <div class="section-body np"><div class="tbl-wrap"><table>
+        <thead><tr><th>Key</th><th>Summary</th><th>Type</th><th>Status</th><th>Priority</th><th>Assignee</th></tr></thead>
+        <tbody>
+          ${issues.map(i=>`<tr>
+            <td class="td-key"><a href="${JIRA_URL}/browse/${i.key}" target="_blank">${i.key}</a></td>
+            <td class="td-title">${trunc(i.fields.summary,65)}</td>
+            <td>${tb(i)}</td><td>${sb(i)}</td><td>${pb(i)}</td><td>${ac(i)}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table></div></div>
+    </div>`;
+  }).join('');
+}
+
+/* ── HELPERS ── */
+function cat(issue) {
+  const n = (issue.fields.status?.name||'').toLowerCase();
+  const c = (issue.fields.status?.statusCategory?.name||'').toLowerCase();
+  if (n.includes('block')||n.includes('imped'))    return 'blocked';
+  if (c==='done'||n==='done'||n==='closed'||n==='resolved') return 'done';
+  if (n.includes('review'))                        return 'review';
+  if (c==='in progress'||n.includes('progress'))   return 'inprogress';
+  return 'todo';
+}
+function sb(i)  { return sbr(i.fields.status?.name||'—'); }
+function sbr(n) {
+  const lc = n.toLowerCase();
+  let c = 'b-todo';
+  if (lc.includes('progress'))  c='b-inprog';
+  else if (lc.includes('review')) c='b-review';
+  else if (lc==='done'||lc==='closed'||lc==='resolved') c='b-done';
+  else if (lc.includes('block')) c='b-block';
+  return `<span class="badge ${c}">${n}</span>`;
+}
+function tb(i) {
+  const t = i.fields.issuetype?.name||'—';
+  const c = {Epic:'b-epic',Story:'b-story',Task:'b-task',Bug:'b-bug','Sub-task':'b-sub'}[t]||'b-task';
+  return `<span class="badge ${c}">${t}</span>`;
+}
+function pb(i) {
+  const p = i.fields.priority?.name||'—';
+  const c = {Highest:'b-p-high',High:'b-p-high',Medium:'b-p-med',Low:'b-p-low',Lowest:'b-p-low'}[p]||'';
+  return p!=='—'?`<span class="badge ${c}">${p}</span>`:`<span class="td-muted">—</span>`;
+}
+function ac(i) {
+  const a = i.fields.assignee;
+  if (!a) return `<span class="td-muted">Unassigned</span>`;
+  return `<span class="av">${a.avatarUrls?.['24x24']?`<img src="${a.avatarUrls['24x24']}">`:init(a.displayName)}</span>${a.displayName}`;
+}
+function init(n) { return (n||'?').split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase(); }
+function cap(s)  { return s?s.charAt(0).toUpperCase()+s.slice(1):s; }
+function trunc(s,n){ return s&&s.length>n?s.slice(0,n)+'…':(s||''); }
+function emp(m)  { return `<div class="empty-state">${m}</div>`; }
+function rd(iso) {
+  if (!iso) return '—';
+  const d=Date.now()-new Date(iso), m=Math.floor(d/60000), h=Math.floor(m/60), dy=Math.floor(h/24);
+  if (m<60) return m+'m ago'; if (h<24) return h+'h ago'; if (dy<30) return dy+'d ago';
+  return new Date(iso).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+}
+function goToProject(key) {
+  document.querySelector('[data-pane="tasks"]').click();
+  document.getElementById('f-project').value = key;
+  renderTasks();
+}
+
+/* ── INIT ── */
+document.getElementById('nav-date').textContent =
+  new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+loadAll();
+</script>
+</body>
+</html>
